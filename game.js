@@ -90,13 +90,37 @@ const Snd = {
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
     o.connect(g); g.connect(dest || this.sfx); o.start(t0); o.stop(t0 + dur + 0.03);
   },
+  // 捡金币：自己合成的「叮-叮～」—— 25% 脉冲波，两个快速上行音 B5→E6，第二音拖长衰减
+  coinStep:0, pulse:null,
+  coinWave(){
+    if (this.pulse) return this.pulse;
+    const N = 32, re = new Float32Array(N), im = new Float32Array(N), duty = 0.25;
+    for (let n = 1; n < N; n++) im[n] = (2 / (n * Math.PI)) * Math.sin(n * Math.PI * duty);
+    try{ this.pulse = this.ctx.createPeriodicWave(re, im); }catch(e){ this.pulse = 'square'; }
+    return this.pulse;
+  },
+  coinSynth(t, k, vol){
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain(), lp = c.createBiquadFilter();
+    const w = this.coinWave(); if (w === 'square') o.type = 'square'; else o.setPeriodicWave(w);
+    const n1 = 987.77 * k, n2 = 1318.51 * k, d1 = 0.068, end = d1 + 0.32;
+    o.frequency.setValueAtTime(n1, t); o.frequency.setValueAtTime(n2, t + d1);
+    lp.type = 'lowpass'; lp.frequency.value = 9000; lp.Q.value = 0.5;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + 0.003);
+    g.gain.setValueAtTime(vol, t + d1);
+    g.gain.setValueAtTime(vol * 1.05, t + d1 + 0.002);
+    g.gain.exponentialRampToValueAtTime(vol * 0.45, t + d1 + 0.09);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + end);
+    o.connect(lp); lp.connect(g); g.connect(this.sfx); o.start(t); o.stop(t + end + 0.02);
+  },
   coin(combo){
-    if (!this.ok()) return; const t = this.ctx.currentTime; if (t - this.lastCoin < 0.04) return; this.lastCoin = t;
-    // 连击越多音越高（按大调音阶往上走），听着越来越爽
-    const SC = [0,2,4,5,7,9,11,12,14,16,17,19,21,23,24];
-    const k = Math.pow(2, SC[Math.min(SC.length-1, Math.floor(combo/2))] / 12);
-    this.play(combo % 2 ? 'coin2' : 'coin', k, 0.55);
-    this.tone(1568*k, t + 0.035, 0.18, 'sine', 0.05);
+    if (!this.ok()) return; const t = this.ctx.currentTime, gap = t - this.lastCoin;
+    if (gap < 0.045) return;
+    // 0.5 秒内连着捡：每枚升半音，最多升 5 个半音；停一下就回到原调
+    this.coinStep = gap < 0.5 ? Math.min(5, this.coinStep + 1) : 0;
+    this.lastCoin = t;
+    const k = Math.pow(2, this.coinStep / 12);
+    // 连得很密（金币雨）时稍微压低音量，免得吵
+    this.coinSynth(t, k, gap < 0.15 ? 0.15 : 0.2);
   },
   big(){ this.play('big', 1, 0.8); this.play('coin', 1.5, 0.4); },
   jump(two){ this.play(two ? 'jump2' : 'jump', two ? 1.15 : 1, 0.35); },
@@ -654,5 +678,5 @@ goMenu();
 requestAnimationFrame(frame);
 loadAssets().catch(() => {}).then(() => { $('#loading').style.display = 'none'; if (!dailyLogin()) refreshMenu(); });
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
-window.__game = {G, S, A, startLevel, press, release};
+window.__game = {G, S, A, Snd, startLevel, press, release};
 })();
