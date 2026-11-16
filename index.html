@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>开心捡金币</title>
+<meta name="theme-color" content="#FFB84D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="捡金币">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{margin:0;padding:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#8FD3FF;position:fixed;inset:0;
+ font-family:-apple-system,"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;color:#5a3b12}
+#game{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#safeProbe{position:fixed;inset:0;pointer-events:none;visibility:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+.screen{position:fixed;inset:0;display:none;align-items:center;justify-content:center;touch-action:manipulation;
+ padding:calc(env(safe-area-inset-top) + 10px) calc(env(safe-area-inset-right) + 10px) calc(env(safe-area-inset-bottom) + 10px) calc(env(safe-area-inset-left) + 10px)}
+.screen.show{display:flex}
+.dim{background:rgba(40,25,5,.35)}
+.panel{background:rgba(255,253,245,.96);border-radius:28px;box-shadow:0 10px 0 rgba(160,95,10,.25),0 18px 40px rgba(0,0,0,.18);
+ padding:18px 20px;width:min(560px,100%);max-height:100%;display:flex;flex-direction:column;gap:12px;border:4px solid #FFD46B}
+h1{margin:0;text-align:center;font-size:clamp(38px,9vmin,64px);color:#FF8A00;letter-spacing:4px;
+ text-shadow:0 3px 0 #fff,0 6px 0 rgba(200,110,0,.35)}
+h2{margin:0;text-align:center;font-size:clamp(28px,6.5vmin,42px);color:#E67700}
+.row{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+.chip{background:#FFF1C9;border-radius:999px;padding:6px 16px;font-size:clamp(20px,4.6vmin,26px);font-weight:700;white-space:nowrap}
+.btn{appearance:none;border:none;border-radius:22px;font:inherit;font-weight:800;cursor:pointer;touch-action:manipulation;
+ font-size:clamp(24px,5.6vmin,32px);min-height:68px;padding:10px 18px;color:#fff;background:linear-gradient(#FFB938,#FF8A00);
+ box-shadow:0 6px 0 #C46200;text-shadow:0 2px 0 rgba(0,0,0,.18);transition:transform .06s}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 #C46200}
+.btn.green{background:linear-gradient(#7EDB6A,#3DB34A);box-shadow:0 6px 0 #22802F}
+.btn.blue{background:linear-gradient(#7CC8FF,#3D93E8);box-shadow:0 6px 0 #2563A8}
+.btn.pink{background:linear-gradient(#FFA3C4,#F06292);box-shadow:0 6px 0 #B03A68}
+.btn.gray{background:linear-gradient(#C9C3B8,#9E978B);box-shadow:0 6px 0 #6F695F}
+.btn.small{min-height:54px;font-size:clamp(20px,4.6vmin,26px);border-radius:18px}
+.btn.big{min-height:84px;font-size:clamp(28px,6.6vmin,38px)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;overscroll-behavior:contain;min-height:0}
+.toggle{flex:1;min-width:0}
+.toggle.off{background:linear-gradient(#C9C3B8,#9E978B);box-shadow:0 6px 0 #6F695F}
+.stars{color:#FFB300;font-size:1.05em;letter-spacing:2px}
+.stars .e{color:#DDD3BF}
+#menu .panel{gap:10px}
+.landscape #menu .panel{width:min(820px,100%)}
+.landscape #menu .grid2{grid-template-columns:1fr 1fr 1fr}
+.tabs{display:flex;gap:8px}
+.tabs .btn{flex:1;min-height:56px;font-size:clamp(20px,4.8vmin,28px)}
+.tabs .btn:not(.on){background:#FFE7B0;color:#A85B00;text-shadow:none;box-shadow:0 5px 0 #E3B65C}
+.shopgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:4px 2px 10px}
+.card{background:#fff;border-radius:20px;border:3px solid #FFE1A0;padding:8px;display:flex;flex-direction:column;align-items:center;gap:6px;touch-action:manipulation}
+.card.on{border-color:#3DB34A;background:#F1FFEF}
+.card canvas{width:120px;height:90px}
+.card .nm{font-size:22px;font-weight:800}
+.card .btn{width:100%;min-height:50px;font-size:21px;padding:6px}
+.daylist{display:flex;flex-direction:column;gap:10px}
+.day{display:flex;align-items:center;gap:10px;background:#fff;border-radius:18px;padding:8px 12px;border:3px solid #FFE1A0}
+.day .d{flex:1;font-size:clamp(20px,4.8vmin,26px);font-weight:800}
+.day .btn{min-height:54px;font-size:22px}
+#pauseBtn{position:fixed;display:none;top:calc(env(safe-area-inset-top) + 10px);right:calc(env(safe-area-inset-right) + 12px);
+ width:64px;height:64px;min-height:0;padding:0;border-radius:50%;font-size:30px;z-index:5;background:rgba(255,255,255,.85);color:#E67700;box-shadow:0 4px 0 rgba(0,0,0,.15);text-shadow:none}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 30px);transform:translateX(-50%);background:rgba(60,35,5,.88);color:#fff;
+ font-size:24px;font-weight:800;border-radius:18px;padding:12px 22px;display:none;z-index:50;white-space:nowrap}
+.bigstars{font-size:clamp(60px,15vmin,96px);text-align:center;line-height:1}
+.bigstars span{display:inline-block;color:#E6DCC8;transform:scale(.4);transition:transform .35s cubic-bezier(.3,1.8,.5,1),color .2s}
+.bigstars span.lit{color:#FFC107;transform:scale(1);text-shadow:0 4px 0 #E08A00}
+.big-num{font-size:clamp(30px,7vmin,44px);font-weight:900;color:#E67700;text-align:center}
+.note{font-size:clamp(18px,4.2vmin,22px);text-align:center;color:#8a6a3a}
+.streak{display:flex;gap:6px;justify-content:center}
+.streak div{width:44px;height:54px;border-radius:12px;background:#FFF1C9;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:16px;font-weight:800}
+.streak div.got{background:#FFC93C;color:#fff}
+@media (orientation:landscape){.portrait-only{display:none}}
+.btn{white-space:nowrap}
+body:not(.landscape) #menu .grid2{grid-template-columns:1fr}
+body:not(.landscape) #menu .grid2 .btn{min-height:60px}
+.toggle{font-size:clamp(18px,4.4vmin,24px)!important;padding:6px 4px!important}
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<div id="safeProbe"></div>
+
+<div id="menu" class="screen show">
+  <div class="panel">
+    <h1>开心捡金币</h1>
+    <div class="row"><span class="chip">🪙 <b id="mWallet">0</b></span><span class="chip">📅 连续 <b id="mStreak">1</b> 天</span></div>
+    <button class="btn big green" id="bToday">▶ 今天的关卡 <span class="stars" id="mTodayStars"></span></button>
+    <div class="grid2">
+      <button class="btn blue" id="bShop">🛍 商店</button>
+      <button class="btn pink" id="bDays">📖 往日关卡</button>
+      <button class="btn" id="bRandom">🎲 随便玩一关</button>
+    </div>
+    <div class="note portrait-only">📱 横过来玩，画面更大</div>
+    <div class="row">
+      <button class="btn small toggle" id="tSound">🔊 音效</button>
+      <button class="btn small toggle" id="tMusic">🎵 音乐</button>
+      <button class="btn small toggle" id="tSpeed">🐢 慢速</button>
+    </div>
+  </div>
+</div>
+
+<div id="days" class="screen dim">
+  <div class="panel">
+    <h2>往日关卡</h2>
+    <div class="note">每天都有一个新关卡，以前的也能再玩</div>
+    <div class="daylist scroll" id="dayList"></div>
+    <button class="btn gray" data-back>← 返回</button>
+  </div>
+</div>
+
+<div id="shop" class="screen dim">
+  <div class="panel" style="height:100%">
+    <div class="row" style="justify-content:space-between"><h2>商店</h2><span class="chip">🪙 <b id="sWallet">0</b></span></div>
+    <div class="tabs"><button class="btn on" data-tab="hat">帽子</button><button class="btn" data-tab="color">颜色</button><button class="btn" data-tab="scene">场景</button></div>
+    <div class="scroll" style="flex:1"><div class="shopgrid" id="shopGrid"></div></div>
+    <button class="btn gray" data-back>← 返回</button>
+  </div>
+</div>
+
+<div id="pause" class="screen dim">
+  <div class="panel" style="width:min(420px,100%)">
+    <h2>休息一下</h2>
+    <button class="btn big green" id="bResume">▶ 继续玩</button>
+    <button class="btn blue" id="bRestart">↻ 重新开始</button>
+    <button class="btn gray" id="bHome">⌂ 回主页</button>
+  </div>
+</div>
+
+<div id="result" class="screen dim">
+  <div class="panel" style="width:min(480px,100%)">
+    <h2 id="rTitle">过关啦！</h2>
+    <div class="bigstars" id="rStars"><span>★</span><span>★</span><span>★</span></div>
+    <div class="big-num">🪙 +<span id="rCoins">0</span></div>
+    <div class="note" id="rNote"></div>
+    <div class="grid2">
+      <button class="btn green" id="bAgain">↻ 再玩一次</button>
+      <button class="btn gray" id="bRHome">⌂ 回主页</button>
+    </div>
+  </div>
+</div>
+
+<div id="popup" class="screen dim">
+  <div class="panel" style="width:min(460px,100%)">
+    <h2 id="pTitle">签到奖励</h2>
+    <div id="pBody"></div>
+    <button class="btn big green" id="pOk">好的！</button>
+  </div>
+</div>
+
+<button class="btn" id="pauseBtn" aria-label="暂停">❚❚</button>
+<div id="toast"></div>
+<script src="game.js"></script>
+</body>
+</html>
