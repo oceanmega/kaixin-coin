@@ -181,7 +181,7 @@ function loadAssets(){
     ...BG_FILES.map(f => loadImg('assets/bg/' + f).then(i => { A.bg[f.split('.')[0]] = i; }))
   ]).then(() => { A.ready = true; });
 }
-function spr(c, n, x, y, w, h){ const f = A.fr[n]; if (!f) return; c.drawImage(A.img, f[0], f[1], f[2], f[3], x, y, w, h); }
+function spr(c, n, x, y, w, h){ const f = A.fr[n]; if (!f || !A.img) return; c.drawImage(A.img, f[0], f[1], f[2], f[3], x, y, w, h); }
 function sprC(c, n, cx, cy, w, h){ spr(c, n, cx - w/2, cy - h/2, w, h); }
 
 // 豆豆换色：只换身体的黄色像素（喙和脚的橙色、肚皮奶白基本不动）
